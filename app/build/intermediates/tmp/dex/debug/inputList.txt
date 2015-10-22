@@ -1,5 +1,0 @@
-/Users/z33/Downloads/SuperpoweredSDK/Android/CrossExample/app/build/intermediates/classes/debug
-/Users/z33/Downloads/SuperpoweredSDK/Android/CrossExample/app/build/intermediates/pre-dexed/debug/support-annotations-22.2.0-7962ca4109354acd2e40e8fe707a172ac4d9a956.jar
-/Users/z33/Downloads/SuperpoweredSDK/Android/CrossExample/app/build/intermediates/pre-dexed/debug/internal_impl-22.2.0-792de90e422d0c5bebdb106f51027c101bea03c9.jar
-/Users/z33/Downloads/SuperpoweredSDK/Android/CrossExample/app/build/intermediates/pre-dexed/debug/classes-0e2eb4c66a482b9e92f88df0e1cdd7d1668ffe1d.jar
-/Users/z33/Downloads/SuperpoweredSDK/Android/CrossExample/app/build/intermediates/pre-dexed/debug/classes-215851f24215a39f4fade8ee419af09b1c088777.jar

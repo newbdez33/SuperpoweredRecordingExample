@@ -31,6 +31,7 @@ SuperpoweredExample::SuperpoweredExample(const char *path, int *params) : active
     pthread_mutex_init(&mutex, NULL); // This will keep our player volumes and playback states in sync.
     unsigned int samplerate = params[4], buffersize = params[5];
     stereoBuffer = (float *)memalign(16, (buffersize + 16) * sizeof(float) * 2);
+    recorderBuffer = (float *) memalign(16, (buffersize + 16) * sizeof(float) * 2); //J
 
     playerA = new SuperpoweredAdvancedAudioPlayer(&playerA , playerEventCallbackA, samplerate, 0);
     playerA->open(path, params[0], params[1]);
@@ -43,14 +44,18 @@ SuperpoweredExample::SuperpoweredExample(const char *path, int *params) : active
     filter = new SuperpoweredFilter(SuperpoweredFilter_Resonant_Lowpass, samplerate);
     flanger = new SuperpoweredFlanger(samplerate);
 
-    audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, false, true, audioProcessing, this, buffersize * 2);
+    recorder = new SuperpoweredRecorder("/sdcard/superpowered/recording.tmp", samplerate);   //J
+    audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, true, true, audioProcessing, this, buffersize * 2);
+
 }
 
 SuperpoweredExample::~SuperpoweredExample() {
     delete playerA;
     delete playerB;
+    delete recorder;
     delete audioSystem;
     free(stereoBuffer);
+    free(recorderBuffer);   //J
     pthread_mutex_destroy(&mutex);
 }
 
@@ -59,10 +64,12 @@ void SuperpoweredExample::onPlayPause(bool play) {
     if (!play) {
         playerA->pause();
         playerB->pause();
+        recorder->stop();
     } else {
         bool masterIsA = (crossValue <= 0.5f);
         playerA->play(!masterIsA);
         playerB->play(masterIsA);
+        recorder->start("/sdcard/superpowered/recording1.mp3");
     };
     pthread_mutex_unlock(&mutex);
 }
@@ -134,6 +141,9 @@ void SuperpoweredExample::onFxValue(int ivalue) {
 bool SuperpoweredExample::process(short int *output, unsigned int numberOfSamples) {
     pthread_mutex_lock(&mutex);
 
+    SuperpoweredShortIntToFloat(output, recorderBuffer, numberOfSamples);
+    recorder->process(recorderBuffer, NULL, numberOfSamples);
+
     bool masterIsA = (crossValue <= 0.5f);
     float masterBpm = masterIsA ? playerA->currentBpm : playerB->currentBpm;
     double msElapsedSinceLastBeatA = playerA->msElapsedSinceLastBeat; // When playerB needs it, playerA has already stepped this value, so save it now.
@@ -149,10 +159,13 @@ bool SuperpoweredExample::process(short int *output, unsigned int numberOfSample
         flanger->process(stereoBuffer, stereoBuffer, numberOfSamples);
     };
 
-    pthread_mutex_unlock(&mutex);
+    
 
     // The stereoBuffer is ready now, let's put the finished audio into the requested buffers.
     if (!silence) SuperpoweredFloatToShortInt(stereoBuffer, output, numberOfSamples);
+
+    pthread_mutex_unlock(&mutex);
+
     return !silence;
 }
 

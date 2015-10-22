@@ -40,6 +40,7 @@ private:
     SuperpoweredFilter *filter;
     SuperpoweredFlanger *flanger;
     float *stereoBuffer;
+    float *recorderBuffer;  //J
     unsigned char activeFx;
     float crossValue, volA, volB;
 
@@ -47,7 +48,7 @@ private:
     //added object variables
     const char *tempPath;
     const char *destinationPath;
-    
+
 };
 
 #endif
