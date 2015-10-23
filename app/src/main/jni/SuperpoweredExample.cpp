@@ -141,14 +141,15 @@ void SuperpoweredExample::onFxValue(int ivalue) {
 bool SuperpoweredExample::process(short int *output, unsigned int numberOfSamples) {
     pthread_mutex_lock(&mutex);
 
-    SuperpoweredShortIntToFloat(output, recorderBuffer, numberOfSamples);
-    recorder->process(recorderBuffer, NULL, numberOfSamples);
+
+    SuperpoweredShortIntToFloat(output, stereoBuffer, numberOfSamples);
+    recorder->process(stereoBuffer, NULL, numberOfSamples);
 
     bool masterIsA = (crossValue <= 0.5f);
     float masterBpm = masterIsA ? playerA->currentBpm : playerB->currentBpm;
     double msElapsedSinceLastBeatA = playerA->msElapsedSinceLastBeat; // When playerB needs it, playerA has already stepped this value, so save it now.
 
-    bool silence = !playerA->process(stereoBuffer, false, numberOfSamples, volA, masterBpm, playerB->msElapsedSinceLastBeat);
+    bool silence = !playerA->process(stereoBuffer, true, numberOfSamples, volA, masterBpm, playerB->msElapsedSinceLastBeat);
     if (playerB->process(stereoBuffer, !silence, numberOfSamples, volB, masterBpm, msElapsedSinceLastBeatA)) silence = false;
 
     roll->bpm = flanger->bpm = masterBpm; // Syncing fx is one line.
