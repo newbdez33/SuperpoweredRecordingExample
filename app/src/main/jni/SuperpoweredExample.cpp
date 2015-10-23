@@ -15,12 +15,12 @@ static void playerEventCallbackA(void *clientData, SuperpoweredAdvancedAudioPlay
 }
 
 static void playerEventCallbackB(void *clientData, SuperpoweredAdvancedAudioPlayerEvent event, void *value) {
-    if (event == SuperpoweredAdvancedAudioPlayerEvent_LoadSuccess) {
-    	SuperpoweredAdvancedAudioPlayer *playerB = *((SuperpoweredAdvancedAudioPlayer **)clientData);
-        playerB->setBpm(123.0f);
-        playerB->setFirstBeatMs(40);
-        playerB->setPosition(playerB->firstBeatMs, false, false);
-    };
+    // if (event == SuperpoweredAdvancedAudioPlayerEvent_LoadSuccess) {
+    // 	SuperpoweredAdvancedAudioPlayer *playerB = *((SuperpoweredAdvancedAudioPlayer **)clientData);
+    //     playerB->setBpm(123.0f);
+    //     playerB->setFirstBeatMs(40);
+    //     playerB->setPosition(playerB->firstBeatMs, false, false);
+    // };
 }
 
 static bool audioProcessing(void *clientdata, short int *audioIO, int numberOfSamples, int samplerate) {
@@ -35,14 +35,7 @@ SuperpoweredExample::SuperpoweredExample(const char *path, int *params) : active
 
     playerA = new SuperpoweredAdvancedAudioPlayer(&playerA , playerEventCallbackA, samplerate, 0);
     playerA->open(path, params[0], params[1]);
-    playerB = new SuperpoweredAdvancedAudioPlayer(&playerB, playerEventCallbackB, samplerate, 0);
-    playerB->open(path, params[2], params[3]);
 
-    playerA->syncMode = playerB->syncMode = SuperpoweredAdvancedAudioPlayerSyncMode_TempoAndBeat;
-
-    roll = new SuperpoweredRoll(samplerate);
-    filter = new SuperpoweredFilter(SuperpoweredFilter_Resonant_Lowpass, samplerate);
-    flanger = new SuperpoweredFlanger(samplerate);
 
     recorder = new SuperpoweredRecorder("/sdcard/superpowered/recording.tmp", samplerate);   //J
     audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, true, true, audioProcessing, this, buffersize * 2);
@@ -51,7 +44,7 @@ SuperpoweredExample::SuperpoweredExample(const char *path, int *params) : active
 
 SuperpoweredExample::~SuperpoweredExample() {
     delete playerA;
-    delete playerB;
+    // delete playerB;
     delete recorder;
     delete audioSystem;
     free(stereoBuffer);
@@ -63,12 +56,12 @@ void SuperpoweredExample::onPlayPause(bool play) {
     pthread_mutex_lock(&mutex);
     if (!play) {
         playerA->pause();
-        playerB->pause();
+        // playerB->pause();
         recorder->stop();
     } else {
         bool masterIsA = (crossValue <= 0.5f);
         playerA->play(!masterIsA);
-        playerB->play(masterIsA);
+        // playerB->play(masterIsA);
         recorder->start("/sdcard/superpowered/recording1.mp3");
     };
     pthread_mutex_unlock(&mutex);
@@ -96,9 +89,9 @@ void SuperpoweredExample::onFxSelect(int value) {
 }
 
 void SuperpoweredExample::onFxOff() {
-    filter->enable(false);
-    roll->enable(false);
-    flanger->enable(false);
+    // filter->enable(false);
+    // roll->enable(false);
+    // flanger->enable(false);
 }
 
 #define MINFREQ 60.0f
@@ -112,30 +105,30 @@ static inline float floatToFrequency(float value) {
 }
 
 void SuperpoweredExample::onFxValue(int ivalue) {
-    float value = float(ivalue) * 0.01f;
-    switch (activeFx) {
-        case 1:
-            filter->setResonantParameters(floatToFrequency(1.0f - value), 0.2f);
-            filter->enable(true);
-            flanger->enable(false);
-            roll->enable(false);
-            break;
-        case 2:
-            if (value > 0.8f) roll->beats = 0.0625f;
-            else if (value > 0.6f) roll->beats = 0.125f;
-            else if (value > 0.4f) roll->beats = 0.25f;
-            else if (value > 0.2f) roll->beats = 0.5f;
-            else roll->beats = 1.0f;
-            roll->enable(true);
-            filter->enable(false);
-            flanger->enable(false);
-            break;
-        default:
-            flanger->setWet(value);
-            flanger->enable(true);
-            filter->enable(false);
-            roll->enable(false);
-    };
+    // float value = float(ivalue) * 0.01f;
+    // switch (activeFx) {
+    //     case 1:
+    //         filter->setResonantParameters(floatToFrequency(1.0f - value), 0.2f);
+    //         filter->enable(true);
+    //         flanger->enable(false);
+    //         roll->enable(false);
+    //         break;
+    //     case 2:
+    //         if (value > 0.8f) roll->beats = 0.0625f;
+    //         else if (value > 0.6f) roll->beats = 0.125f;
+    //         else if (value > 0.4f) roll->beats = 0.25f;
+    //         else if (value > 0.2f) roll->beats = 0.5f;
+    //         else roll->beats = 1.0f;
+    //         roll->enable(true);
+    //         filter->enable(false);
+    //         flanger->enable(false);
+    //         break;
+    //     default:
+    //         flanger->setWet(value);
+    //         flanger->enable(true);
+    //         filter->enable(false);
+    //         roll->enable(false);
+    // };
 }
 
 bool SuperpoweredExample::process(short int *output, unsigned int numberOfSamples) {
@@ -145,22 +138,7 @@ bool SuperpoweredExample::process(short int *output, unsigned int numberOfSample
     SuperpoweredShortIntToFloat(output, stereoBuffer, numberOfSamples);
     recorder->process(stereoBuffer, NULL, numberOfSamples);
 
-    bool masterIsA = (crossValue <= 0.5f);
-    float masterBpm = masterIsA ? playerA->currentBpm : playerB->currentBpm;
-    double msElapsedSinceLastBeatA = playerA->msElapsedSinceLastBeat; // When playerB needs it, playerA has already stepped this value, so save it now.
-
-    bool silence = !playerA->process(stereoBuffer, true, numberOfSamples, volA, masterBpm, playerB->msElapsedSinceLastBeat);
-    if (playerB->process(stereoBuffer, !silence, numberOfSamples, volB, masterBpm, msElapsedSinceLastBeatA)) silence = false;
-
-    roll->bpm = flanger->bpm = masterBpm; // Syncing fx is one line.
-
-    if (roll->process(silence ? NULL : stereoBuffer, stereoBuffer, numberOfSamples) && silence) silence = false;
-    if (!silence) {
-        filter->process(stereoBuffer, stereoBuffer, numberOfSamples);
-        flanger->process(stereoBuffer, stereoBuffer, numberOfSamples);
-    };
-
-    
+    bool silence = !playerA->process(stereoBuffer, true, numberOfSamples);
 
     // The stereoBuffer is ready now, let's put the finished audio into the requested buffers.
     if (!silence) SuperpoweredFloatToShortInt(stereoBuffer, output, numberOfSamples);
