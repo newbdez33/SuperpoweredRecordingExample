@@ -38,7 +38,7 @@ SuperpoweredExample::SuperpoweredExample(const char *path, int *params) : active
 
 
     recorder = new SuperpoweredRecorder("/sdcard/superpowered/recording.tmp", samplerate);   //J
-    audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, true, true, audioProcessing, this, buffersize * 2);
+    audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, true, false, audioProcessing, this, buffersize * 2);
 
 }
 
@@ -133,17 +133,14 @@ void SuperpoweredExample::onFxValue(int ivalue) {
 
 bool SuperpoweredExample::process(short int *output, unsigned int numberOfSamples) {
     pthread_mutex_lock(&mutex);
-
-
+    
     SuperpoweredShortIntToFloat(output, stereoBuffer, numberOfSamples);
+    bool silence = !playerA->process(stereoBuffer, true, numberOfSamples);
     recorder->process(stereoBuffer, NULL, numberOfSamples);
 
-    bool silence = !playerA->process(stereoBuffer, true, numberOfSamples);
-
-    // The stereoBuffer is ready now, let's put the finished audio into the requested buffers.
-    if (!silence) SuperpoweredFloatToShortInt(stereoBuffer, output, numberOfSamples);
-
     pthread_mutex_unlock(&mutex);
+
+    if (!silence) SuperpoweredFloatToShortInt(stereoBuffer, output, numberOfSamples);
 
     return !silence;
 }
