@@ -38,7 +38,7 @@ SuperpoweredExample::SuperpoweredExample(const char *path, int *params) : active
 
 
     recorder = new SuperpoweredRecorder("/sdcard/superpowered/recording.tmp", samplerate);   //J
-    audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, true, false, audioProcessing, this, buffersize * 2);
+    audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, true, true, audioProcessing, this, buffersize * 2);
 
 }
 
