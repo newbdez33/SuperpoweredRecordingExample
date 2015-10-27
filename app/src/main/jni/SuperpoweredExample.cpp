@@ -133,14 +133,19 @@ void SuperpoweredExample::onFxValue(int ivalue) {
 
 bool SuperpoweredExample::process(short int *output, unsigned int numberOfSamples) {
     pthread_mutex_lock(&mutex);
-    
-    SuperpoweredShortIntToFloat(output, stereoBuffer, numberOfSamples);
-    bool silence = !playerA->process(stereoBuffer, true, numberOfSamples);
-    recorder->process(stereoBuffer, NULL, numberOfSamples);
 
+    bool silence = !playerA->process(recorderBuffer, false, numberOfSamples);
+
+    SuperpoweredShortIntToFloat(output, stereoBuffer, numberOfSamples);
+    silence = !playerA->process(stereoBuffer, true, numberOfSamples);
+    
+    //silence = !playerA->process(stereoBuffer, false, numberOfSamples);
     pthread_mutex_unlock(&mutex);
 
-    if (!silence) SuperpoweredFloatToShortInt(stereoBuffer, output, numberOfSamples);
+
+    recorder->process(stereoBuffer, NULL, numberOfSamples);
+
+    if (!silence) SuperpoweredFloatToShortInt(recorderBuffer, output, numberOfSamples);
 
     return !silence;
 }
