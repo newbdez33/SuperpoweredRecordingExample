@@ -15,12 +15,12 @@ static void playerEventCallbackA(void *clientData, SuperpoweredAdvancedAudioPlay
 }
 
 static void playerEventCallbackB(void *clientData, SuperpoweredAdvancedAudioPlayerEvent event, void *value) {
-    // if (event == SuperpoweredAdvancedAudioPlayerEvent_LoadSuccess) {
-    // 	SuperpoweredAdvancedAudioPlayer *playerB = *((SuperpoweredAdvancedAudioPlayer **)clientData);
-    //     playerB->setBpm(123.0f);
-    //     playerB->setFirstBeatMs(40);
-    //     playerB->setPosition(playerB->firstBeatMs, false, false);
-    // };
+     if (event == SuperpoweredAdvancedAudioPlayerEvent_LoadSuccess) {
+     	SuperpoweredAdvancedAudioPlayer *playerB = *((SuperpoweredAdvancedAudioPlayer **)clientData);
+         playerB->setBpm(123.0f);
+         playerB->setFirstBeatMs(40);
+         playerB->setPosition(playerB->firstBeatMs, false, false);
+     };
 }
 
 static bool audioProcessing(void *clientdata, short int *audioIO, int numberOfSamples, int samplerate) {
@@ -36,6 +36,10 @@ SuperpoweredExample::SuperpoweredExample(const char *path, int *params) : active
     playerA = new SuperpoweredAdvancedAudioPlayer(&playerA , playerEventCallbackA, samplerate, 0);
     playerA->open(path, params[0], params[1]);
 
+    playerB = new SuperpoweredAdvancedAudioPlayer(&playerB, playerEventCallbackB, samplerate, 0);
+    playerB->open(path, params[0], params[1]);
+
+    playerA->syncMode = playerB->syncMode = SuperpoweredAdvancedAudioPlayerSyncMode_TempoAndBeat;
 
     recorder = new SuperpoweredRecorder("/sdcard/superpowered/recording.tmp", samplerate);   //J
     audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, true, true, audioProcessing, this, buffersize * 2);
@@ -44,7 +48,7 @@ SuperpoweredExample::SuperpoweredExample(const char *path, int *params) : active
 
 SuperpoweredExample::~SuperpoweredExample() {
     delete playerA;
-    // delete playerB;
+    delete playerB;
     delete recorder;
     delete audioSystem;
     free(stereoBuffer);
@@ -56,12 +60,12 @@ void SuperpoweredExample::onPlayPause(bool play) {
     pthread_mutex_lock(&mutex);
     if (!play) {
         playerA->pause();
-        // playerB->pause();
+        playerB->pause();
         recorder->stop();
     } else {
         bool masterIsA = (crossValue <= 0.5f);
         playerA->play(!masterIsA);
-        // playerB->play(masterIsA);
+        playerB->play(!masterIsA);
         recorder->start("/sdcard/superpowered/recording1.mp3");
     };
     pthread_mutex_unlock(&mutex);
@@ -134,11 +138,11 @@ void SuperpoweredExample::onFxValue(int ivalue) {
 bool SuperpoweredExample::process(short int *output, unsigned int numberOfSamples) {
     pthread_mutex_lock(&mutex);
 
-    bool silence = !playerA->process(recorderBuffer, false, numberOfSamples);
+    bool silence = !playerB->process(recorderBuffer, false, numberOfSamples);
 
     SuperpoweredShortIntToFloat(output, stereoBuffer, numberOfSamples);
     silence = !playerA->process(stereoBuffer, true, numberOfSamples);
-    
+
     //silence = !playerA->process(stereoBuffer, false, numberOfSamples);
     pthread_mutex_unlock(&mutex);
 
