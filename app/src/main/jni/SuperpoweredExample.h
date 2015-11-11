@@ -16,6 +16,8 @@
 #define HEADROOM_DECIBEL 3.0f
 static const float headroom = powf(10.0f, -HEADROOM_DECIBEL * 0.025);
 
+const int MP3_SIZE = 8192;
+
 class SuperpoweredExample {
 public:
 
@@ -41,6 +43,7 @@ private:
     SuperpoweredFlanger *flanger;
     float *stereoBuffer;
     float *recorderBuffer;  //J
+    unsigned char mp3Buffer[MP3_SIZE];
     unsigned char activeFx;
     float crossValue, volA, volB;
 

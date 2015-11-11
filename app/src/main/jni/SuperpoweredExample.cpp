@@ -6,6 +6,9 @@
 #include <android/log.h>
 #include "lame_3.99.5_libmp3lame/lame.h"
 
+static lame_global_flags *lame = NULL;
+
+
 static void playerEventCallbackA(void *clientData, SuperpoweredAdvancedAudioPlayerEvent event, void *value) {
     if (event == SuperpoweredAdvancedAudioPlayerEvent_LoadSuccess) {
     	SuperpoweredAdvancedAudioPlayer *playerA = *((SuperpoweredAdvancedAudioPlayer **)clientData);
@@ -44,6 +47,19 @@ SuperpoweredExample::SuperpoweredExample(const char *path, int *params) : active
 
     recorder = new SuperpoweredRecorder("/sdcard/superpowered/recording.tmp", samplerate);   //J
     audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, true, true, audioProcessing, this, buffersize * 2);
+
+    //LAME
+    if (lame != NULL) {
+        lame_close(lame);
+        lame = NULL;
+    }
+    lame = lame_init();
+    lame_set_in_samplerate(lame, samplerate);
+    lame_set_num_channels(lame, 1);//输入流的声道
+    lame_set_out_samplerate(lame, samplerate);
+    lame_set_brate(lame, 32);
+    lame_set_quality(lame, 7);
+    lame_init_params(lame);
 
 }
 
@@ -151,8 +167,12 @@ bool SuperpoweredExample::process(short int *output, unsigned int numberOfSample
     recorder->process(stereoBuffer, NULL, numberOfSamples);
 
 
-
     if (!silence) SuperpoweredFloatToShortInt(recorderBuffer, output, numberOfSamples);
+
+    /* LAME */
+    int result = lame_encode_buffer(lame, output, output, numberOfSamples, mp3Buffer, MP3_SIZE);
+    __android_log_print(ANDROID_LOG_ERROR, "TEST", "lame result = %d", result);
+    /* LAME */
 
     return !silence;
 }
