@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <android/log.h>
+#include "lame_3.99.5_libmp3lame/lame.h"
 
 static void playerEventCallbackA(void *clientData, SuperpoweredAdvancedAudioPlayerEvent event, void *value) {
     if (event == SuperpoweredAdvancedAudioPlayerEvent_LoadSuccess) {
@@ -148,6 +149,8 @@ bool SuperpoweredExample::process(short int *output, unsigned int numberOfSample
 
 
     recorder->process(stereoBuffer, NULL, numberOfSamples);
+
+
 
     if (!silence) SuperpoweredFloatToShortInt(recorderBuffer, output, numberOfSamples);
 
