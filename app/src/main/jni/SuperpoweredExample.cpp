@@ -37,6 +37,7 @@ SuperpoweredExample::SuperpoweredExample(const char *path, int *params) : active
     unsigned int samplerate = params[4], buffersize = params[5];
     stereoBuffer = (float *)memalign(16, (buffersize + 16) * sizeof(float) * 2);
     recorderBuffer = (float *) memalign(16, (buffersize + 16) * sizeof(float) * 2); //J
+    mp3Output = (short int *) memalign(16, (buffersize + 16) * sizeof(short int) * 2); //J
 
     playerA = new SuperpoweredAdvancedAudioPlayer(&playerA , playerEventCallbackA, samplerate, 0);
     playerA->open(path, params[0], params[1]);
@@ -167,16 +168,19 @@ bool SuperpoweredExample::process(short int *output, unsigned int numberOfSample
     recorder->process(stereoBuffer, NULL, numberOfSamples);
 
     if (!silence) {
-        SuperpoweredFloatToShortInt(recorderBuffer, output, numberOfSamples);
 
+
+        memset(mp3Output, 0, sizeof(mp3Output));
+        SuperpoweredFloatToShortInt(stereoBuffer, mp3Output, numberOfSamples);
         /* LAME */
-        int result = lame_encode_buffer_interleaved(lame, output, numberOfSamples, mp3Buffer, MP3_SIZE);
+        int result = lame_encode_buffer_interleaved(lame, mp3Output, numberOfSamples, mp3Buffer, MP3_SIZE);
         if (result > 0) {
             __android_log_print(ANDROID_LOG_ERROR, "TEST", "lame result = %d", result);
             fwrite(mp3Buffer, result, 1, mp3);
         }
-
         /* LAME */
+
+        SuperpoweredFloatToShortInt(recorderBuffer, output, numberOfSamples);
     }
 
     return !silence;

@@ -43,6 +43,7 @@ private:
     SuperpoweredFlanger *flanger;
     float *stereoBuffer;
     float *recorderBuffer;  //J
+    short int *mp3Output;
     unsigned char activeFx;
     float crossValue, volA, volB;
 
