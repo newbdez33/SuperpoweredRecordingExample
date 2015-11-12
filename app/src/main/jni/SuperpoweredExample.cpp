@@ -7,7 +7,8 @@
 #include "lame_3.99.5_libmp3lame/lame.h"
 
 static lame_global_flags *lame = NULL;
-
+static FILE *mp3 = NULL;
+static unsigned char mp3Buffer[MP3_SIZE];
 
 static void playerEventCallbackA(void *clientData, SuperpoweredAdvancedAudioPlayerEvent event, void *value) {
     if (event == SuperpoweredAdvancedAudioPlayerEvent_LoadSuccess) {
@@ -55,9 +56,9 @@ SuperpoweredExample::SuperpoweredExample(const char *path, int *params) : active
     }
     lame = lame_init();
     lame_set_in_samplerate(lame, samplerate);
-    lame_set_num_channels(lame, 1);//输入流的声道
+    lame_set_num_channels(lame, 2);//输入流的声道
     lame_set_out_samplerate(lame, samplerate);
-    lame_set_brate(lame, 32);
+    //lame_set_brate(lame, buffersize);
     lame_set_quality(lame, 7);
     lame_init_params(lame);
 
@@ -163,16 +164,20 @@ bool SuperpoweredExample::process(short int *output, unsigned int numberOfSample
     //silence = !playerA->process(stereoBuffer, false, numberOfSamples);
     pthread_mutex_unlock(&mutex);
 
-
     recorder->process(stereoBuffer, NULL, numberOfSamples);
 
+    if (!silence) {
+        SuperpoweredFloatToShortInt(recorderBuffer, output, numberOfSamples);
 
-    if (!silence) SuperpoweredFloatToShortInt(recorderBuffer, output, numberOfSamples);
+        /* LAME */
+        int result = lame_encode_buffer_interleaved(lame, output, numberOfSamples, mp3Buffer, MP3_SIZE);
+        if (result > 0) {
+            __android_log_print(ANDROID_LOG_ERROR, "TEST", "lame result = %d", result);
+            fwrite(mp3Buffer, result, 1, mp3);
+        }
 
-    /* LAME */
-    int result = lame_encode_buffer(lame, output, output, numberOfSamples, mp3Buffer, MP3_SIZE);
-    __android_log_print(ANDROID_LOG_ERROR, "TEST", "lame result = %d", result);
-    /* LAME */
+        /* LAME */
+    }
 
     return !silence;
 }
@@ -203,6 +208,18 @@ JNIEXPORT void Java_com_superpowered_crossexample_MainActivity_SuperpoweredExamp
 }
 
 JNIEXPORT void Java_com_superpowered_crossexample_MainActivity_onPlayPause(JNIEnv *javaEnvironment, jobject self, jboolean play) {
+    if (play) {
+        __android_log_print(ANDROID_LOG_ERROR, "TEST", "Play!");
+        mp3 = fopen("/sdcard/superpowered/test.mp3", "wb");
+    }else {
+        __android_log_print(ANDROID_LOG_ERROR, "TEST", "STOP!");
+        int result = lame_encode_flush(lame,mp3Buffer, MP3_SIZE);
+        if(result > 0) {
+            fwrite(mp3Buffer, result, 1, mp3);
+        }
+        lame_close(lame);
+        fclose(mp3);
+    }
 	example->onPlayPause(play);
 }
 
